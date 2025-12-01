@@ -1,0 +1,182 @@
+01_crud_contratos_secop.js
+// 01_crud_contratos_secop.js
+// Operaciones CRUD básicas sobre la colección contratos_secop
+// Base de datos: UNAD_BIGDATA
+
+use("UNAD_BIGDATA");
+
+// 1. Inserción de un contrato de prueba
+db.contratos_secop.insertOne({
+  "Nombre Entidad": "ENTIDAD DE PRUEBA",
+  "Nit Entidad": "999999999",
+  "Departamento": "Bogotá D.C.",
+  "Ciudad": "Bogotá",
+  "Localización": "Colombia, Bogotá D.C.",
+  "Orden": "Territorial",
+  "Sector": "No aplica/No pertenece",
+  "Rama": "Ejecutivo",
+  "Proceso de Compra": "PRUEBA-0001-2025",
+  "ID Contrato": "PRUEBA-CTO-0001",
+  "Estado Contrato": "Cerrado",
+  "Tipo de Contrato": "Prestación de servicios",
+  "Modalidad de Contratacion": "Contratación directa",
+  "Valor Contrato": 10000000,
+  "Año Firma": 2025
+});
+
+// 2. Consultas básicas de selección
+
+// 2.1 Buscar contratos por nombre de entidad
+db.contratos_secop.find(
+  { "Nombre Entidad": "ALCALDÍA DEL DISTRITO TURÍSTICO Y CULTURAL DE CARTAGENA DE INDIAS" }
+);
+
+// 2.2 Buscar contratos por estado del contrato
+db.contratos_secop.find(
+  { "Estado Contrato": "Cerrado" }
+);
+
+// 2.3 Buscar contratos por tipo de documento del proveedor
+db.contratos_secop.find(
+  { "TipoDocProveedor": "NIT" }
+);
+
+// 3. Actualizaciones
+
+// 3.1 Actualizar el valor y estado de un contrato de prueba
+db.contratos_secop.updateOne(
+  { "ID Contrato": "PRUEBA-CTO-0001" },
+  {
+    $set: {
+      "Valor Contrato": 15000000,
+      "Estado Contrato": "En ejecución"
+    }
+  }
+);
+
+// 3.2 Actualizar el estado de varios contratos por modalidad
+db.contratos_secop.updateMany(
+  { "Modalidad de Contratacion": "Contratación directa" },
+  { $set: { "Estado Contrato": "Cerrado" } }
+);
+
+// 4. Eliminaciones
+
+// 4.1 Eliminar el contrato de prueba
+db.contratos_secop.deleteOne(
+  { "ID Contrato": "PRUEBA-CTO-0001" }
+);
+
+// 4.2 Eliminar contratos de prueba por nombre de entidad
+db.contratos_secop.deleteMany(
+  { "Nombre Entidad": "ENTIDAD DE PRUEBA" }
+);
+
+02_filtros_operadores_contratos_secop.js
+// 02_filtros_operadores_contratos_secop.js
+// Consultas con filtros y operadores sobre contratos_secop
+
+use("UNAD_BIGDATA");
+
+// 5.1 Buscar contratos de una entidad específica (igualdad)
+db.contratos_secop.find(
+  { "Nombre Entidad": { $eq: "ALCALDÍA DEL DISTRITO TURÍSTICO Y CULTURAL DE CARTAGENA DE INDIAS" } }
+).limit(5);
+
+// 5.2 Contratos con valor mayor a $500 millones
+db.contratos_secop.find(
+  { "Valor del Contrato 2": { $gt: 500000000 } },
+  { "Nombre Entidad": 1, "Valor del Contrato 2": 1 }
+);
+
+// 5.3 Contratos con valor entre $100 y $300 millones
+db.contratos_secop.find(
+  {
+    "Valor del Contrato 2": {
+      $gte: 100000000,
+      $lte: 300000000
+    }
+  },
+  { "Nombre Entidad": 1, "Valor del Contrato 2": 1 }
+);
+
+// 5.4 Contratos cuyo estado sea “Cerrado” o “Terminado”
+db.contratos_secop.find(
+  {
+    $or: [
+      { "Estado Contrato": "Cerrado" },
+      { "Estado Contrato": "Terminado" }
+    ]
+  },
+  { "ID Contrato": 1, "Estado Contrato": 1 }
+);
+
+// 5.5 Filtrar contratos por modalidad que contenga la palabra “directa”
+db.contratos_secop.find(
+  { "Modalidad de Contratacion": { $regex: /directa/i } },
+  { "Modalidad de Contratacion": 1, "Nombre Entidad": 1, _id: 0 }
+).limit(10);
+
+// 5.6 Filtrar proveedores por tipo de documento NIT o CC
+db.contratos_secop.find(
+  {
+    "TipoDocProveedor": { $in: ["NIT", "CC"] }
+  },
+  { "Proveedor": 1, "TipoDocProveedor": 1 }
+);
+
+// 5.7 Contratos cuyo objeto incluya la palabra “obra”
+db.contratos_secop.find(
+  {
+    "Descripcion del Proceso": { $regex: /obra/i }
+  },
+  { "ID Contrato": 1, "Descripcion del Proceso": 1 }
+).limit(10);
+
+// 5.8 Contratos donde el valor sea nulo o igual a cero
+db.contratos_secop.find(
+  {
+    $or: [
+      { "Valor Contrato": { $eq: 0 } },
+      { "Valor Contrato": { $exists: false } }
+    ]
+  }
+);
+
+// 5.9 Contratos cuyo proveedor NO tenga NIT
+db.contratos_secop.find(
+  { "TipoDocProveedor": { $ne: "NIT" } },
+  { "Proveedor": 1, "TipoDocProveedor": 1 }
+);
+
+// 6. Filtro combinado: contratos cerrados y de modalidad directa
+db.contratos_secop.find(
+  {
+    "Estado Contrato": "Cerrado",
+    "Modalidad de Contratacion": "Contratación directa"
+  }
+);
+
+03_agregaciones_contratos_secop.js
+// 03_agregaciones_contratos_secop.js
+// Consultas de agregación sobre contratos_secop
+
+use("UNAD_BIGDATA");
+
+// 7.1 Total de contratos por modalidad de contratación
+db.contratos_secop.aggregate([
+  { $group: { _id: "$Modalidad de Contratacion", total: { $sum: 1 } } },
+  { $sort: { total: -1 } }
+]);
+
+// 7.2 Top 10 entidades con mayor número de contratos
+db.contratos_secop.aggregate([
+  { $group: { _id: "$Nombre Entidad", total: { $sum: 1 } } },
+  { $sort: { total: -1 } },
+  { $limit: 10 }
+]);
+
+// 7.3 Contratos por tipo de documento del proveedor
+db.contratos_secop.aggregate([
+  { $group: { _id: "$TipoDocProveedor", total: { $sum: 1 } } }
+]);
